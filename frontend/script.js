@@ -1,6 +1,10 @@
 // Utilise automatiquement l'hôte actuel pour éviter les erreurs de requête
 // lorsqu'on accède à l'application depuis un autre appareil que le serveur.
-const API_URL = `${window.location.protocol}//${window.location.hostname}:15610/transcribe`;
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:15610`;
+const API_TRANSCRIBE = `${API_BASE}/transcribe`;
+const API_LOGIN = `${API_BASE}/login`;
+const API_USERS = `${API_BASE}/admin/users`;
+const API_TRANSCRIPTIONS = `${API_BASE}/admin/transcriptions`;
 
 const messagesDiv = document.getElementById("messages");
 const statusText = document.getElementById("status");
@@ -9,6 +13,18 @@ const logoutBtn = document.getElementById("logoutBtn");
 const loginForm = document.getElementById("loginForm");
 const transcribeCard = document.getElementById("transcribeCard");
 const featureList = document.getElementById("featureList");
+const adminCard = document.getElementById("adminCard");
+const userCard = document.getElementById("userCard");
+const filterUser = document.getElementById("filterUser");
+const filterStart = document.getElementById("filterStart");
+const filterEnd = document.getElementById("filterEnd");
+const transcriptionTable = document.getElementById("transcriptionTable");
+const userForm = document.getElementById("userForm");
+
+const state = {
+  token: null,
+  user: null,
+};
 
 const FEATURES = [
   { name: "Transcrire un fichier audio", status: "ready", key: "audio-file" },
@@ -62,45 +78,87 @@ function clearTranscription() {
   statusText.textContent = "Aucun traitement en cours.";
 }
 
-function setAuthenticated(isAuthenticated, email = "") {
-  const loggedText = email ? `Connecté en tant que ${email}` : "Connexion requise";
+function setAuthenticated(user, token) {
+  state.user = user;
+  state.token = token;
+  if (user && token) {
+    localStorage.setItem("tn_portal_token", token);
+    localStorage.setItem("tn_portal_user", JSON.stringify(user));
+  } else {
+    localStorage.removeItem("tn_portal_token");
+    localStorage.removeItem("tn_portal_user");
+  }
+
+  const loggedText = user ? `Connecté en tant que ${user.login}` : "Connexion requise";
   authStatus.textContent = loggedText;
-  logoutBtn.hidden = !isAuthenticated;
-  transcribeCard.classList.toggle("disabled", !isAuthenticated);
+  logoutBtn.hidden = !user;
+  transcribeCard.classList.toggle("disabled", !user);
+
+  const isAdmin = Boolean(user?.is_admin);
+  adminCard.hidden = !isAdmin;
+  userCard.hidden = !isAdmin;
+
+  if (isAdmin) {
+    loadUsers();
+    loadTranscriptions();
+  } else {
+    filterUser.innerHTML = '<option value="">Tous</option>';
+    transcriptionTable.innerHTML = "";
+  }
 }
 
-function initAuth() {
+function restoreSession() {
   const token = localStorage.getItem("tn_portal_token");
-  const email = localStorage.getItem("tn_portal_email");
-  const isAuthenticated = Boolean(token && email);
-  setAuthenticated(isAuthenticated, email || "");
+  const userRaw = localStorage.getItem("tn_portal_user");
+  if (token && userRaw) {
+    try {
+      const parsed = JSON.parse(userRaw);
+      setAuthenticated(parsed, token);
+      return;
+    } catch (error) {
+      console.warn("Impossible de restaurer la session", error);
+    }
+  }
+  setAuthenticated(null, null);
 }
 
 function logout() {
-  localStorage.removeItem("tn_portal_token");
-  localStorage.removeItem("tn_portal_email");
-  setAuthenticated(false);
+  setAuthenticated(null, null);
   alert("Vous êtes déconnecté.");
 }
 
-loginForm.addEventListener("submit", (event) => {
+function buildAuthHeaders() {
+  if (!state.token) return {};
+  return { Authorization: `Bearer ${state.token}` };
+}
+
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const email = document.getElementById("email").value.trim();
+  const loginValue = document.getElementById("login").value.trim();
   const password = document.getElementById("password").value.trim();
 
-  if (email.toLowerCase() === "redaction@tunisienumerique.tn" && password === "demo123") {
-    localStorage.setItem("tn_portal_token", "demo-token");
-    localStorage.setItem("tn_portal_email", email);
-    setAuthenticated(true, email);
-    alert("Connexion réussie, vous pouvez lancer la transcription.");
-  } else {
-    alert("Identifiants invalides. Merci d'utiliser le compte de démonstration.");
+  try {
+    const response = await fetch(API_LOGIN, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: loginValue, password }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json();
+      throw new Error(payload.error || "Identifiants invalides");
+    }
+
+    const payload = await response.json();
+    setAuthenticated(payload.user, payload.token);
+    alert("Connexion réussie. Vous pouvez lancer la transcription.");
+  } catch (error) {
+    alert(error.message);
   }
 });
 
 async function uploadAudio() {
-  const token = localStorage.getItem("tn_portal_token");
-  if (!token) {
+  if (!state.token) {
     alert("Connectez-vous pour lancer la transcription.");
     return;
   }
@@ -118,13 +176,15 @@ async function uploadAudio() {
   statusText.textContent = "Découpage et transcription en cours...";
 
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(API_TRANSCRIBE, {
       method: "POST",
       body: formData,
+      headers: buildAuthHeaders(),
     });
 
     if (!response.ok) {
-      throw new Error(`Erreur serveur : ${response.status}`);
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || `Erreur serveur : ${response.status}`);
     }
 
     const reader = response.body?.getReader();
@@ -164,6 +224,10 @@ async function uploadAudio() {
         addMessage(payload.text?.trim(), payload.index);
       }
     }
+
+    if (state.user?.is_admin) {
+      await loadTranscriptions();
+    }
   } catch (error) {
     console.error("Erreur :", error);
     statusText.textContent = "Erreur de connexion avec le serveur Flask";
@@ -172,5 +236,105 @@ async function uploadAudio() {
   }
 }
 
+async function loadUsers() {
+  if (!state.user?.is_admin) return;
+  try {
+    const response = await fetch(API_USERS, { headers: buildAuthHeaders() });
+    if (!response.ok) throw new Error("Impossible de charger les utilisateurs");
+    const users = await response.json();
+
+    filterUser.innerHTML = '<option value="">Tous</option>';
+    users.forEach((user) => {
+      const option = document.createElement("option");
+      option.value = user.login;
+      option.textContent = `${user.login} (${user.first_name || ""} ${user.last_name || ""})`.trim();
+      filterUser.appendChild(option);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function formatDuration(seconds) {
+  if (!seconds && seconds !== 0) return "-";
+  const minutes = Math.floor(seconds / 60);
+  const remaining = Math.round(seconds % 60);
+  if (minutes === 0) return `${remaining}s`;
+  return `${minutes}m ${remaining}s`;
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return date.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+}
+
+async function loadTranscriptions() {
+  if (!state.user?.is_admin) return;
+  const params = new URLSearchParams();
+  if (filterUser.value) params.append("user", filterUser.value);
+  if (filterStart.value) params.append("start_date", filterStart.value);
+  if (filterEnd.value) params.append("end_date", filterEnd.value);
+
+  const query = params.toString() ? `?${params.toString()}` : "";
+  try {
+    const response = await fetch(`${API_TRANSCRIPTIONS}${query}`, {
+      headers: buildAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Impossible de charger les transcriptions");
+
+    const rows = await response.json();
+    transcriptionTable.innerHTML = "";
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.user_login}</td>
+        <td>${row.file_name}<br/><small>${row.file_path || ""}</small></td>
+        <td>${formatDuration(row.duration_seconds)}</td>
+        <td>${formatDate(row.transcribed_at)}</td>
+      `;
+      transcriptionTable.appendChild(tr);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function resetFilters() {
+  filterUser.value = "";
+  filterStart.value = "";
+  filterEnd.value = "";
+  loadTranscriptions();
+}
+
+userForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!state.user?.is_admin) return;
+
+  const payload = {
+    login: document.getElementById("newLogin").value.trim(),
+    first_name: document.getElementById("newFirstName").value.trim(),
+    last_name: document.getElementById("newLastName").value.trim(),
+    email: document.getElementById("newEmail").value.trim(),
+    password: document.getElementById("newPassword").value.trim(),
+  };
+
+  try {
+    const response = await fetch(API_USERS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...buildAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Création impossible");
+
+    alert("Utilisateur créé");
+    userForm.reset();
+    loadUsers();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
 renderFeatures();
-initAuth();
+restoreSession();

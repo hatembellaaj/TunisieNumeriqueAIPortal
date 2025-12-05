@@ -1,0 +1,28 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.env/
+
+# Audio files
+*.wav
+*.mp3
+*.mp4
+
+# Temp folders
+backend/temp_audio_input/
+backend/temp_audio.wav
+
+# Docker artifacts
+*.log
+*.pid
+*.sock
+.docker/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

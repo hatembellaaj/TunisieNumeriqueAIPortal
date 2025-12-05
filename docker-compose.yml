@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: whisper_backend
+    ports:
+      - "5610:5610"
+    volumes:
+      - ./backend/temp_audio_input:/app/temp_audio_input
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: whisper_frontend
+    ports:
+      - "8787:80"
+    depends_on:
+      - backend

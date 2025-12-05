@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Speech to Text - Français</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Conversion Audio → Texte</h1>
+    <p class="intro">Découpez automatiquement vos fichiers audio en parcelles et suivez la transcription au fil de l'eau.</p>
+
+    <div class="uploader">
+      <label class="file-label" for="audioFile">Choisissez un fichier audio</label>
+      <input type="file" id="audioFile" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/flac" />
+      <p class="formats">Formats autorisés : WAV, MP3, M4A, AAC, OGG, FLAC.</p>
+      <button onclick="uploadAudio()">Transcrire</button>
+    </div>
+
+    <div id="status" class="status">Aucun traitement en cours.</div>
+
+    <h2>Résultat :</h2>
+    <div id="messages" class="messages"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

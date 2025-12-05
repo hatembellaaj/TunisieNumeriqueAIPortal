@@ -2,26 +2,85 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Speech to Text - Français</title>
+  <title>Portail IA · TunisieNumerique</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>🎙️ Conversion Audio → Texte</h1>
-    <p class="intro">Découpez automatiquement vos fichiers audio en parcelles et suivez la transcription au fil de l'eau.</p>
-
-    <div class="uploader">
-      <label class="file-label" for="audioFile">Choisissez un fichier audio</label>
-      <input type="file" id="audioFile" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/flac" />
-      <p class="formats">Formats autorisés : WAV, MP3, M4A, AAC, OGG, FLAC.</p>
-      <button onclick="uploadAudio()">Transcrire</button>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">TN</span>
+      <div>
+        <div class="brand-name">TunisieNumerique</div>
+        <div class="brand-sub">Portail d'outils IA</div>
+      </div>
     </div>
+    <div class="user-panel" id="userPanel">
+      <div id="authStatus">Connexion requise</div>
+      <button id="logoutBtn" class="ghost" onclick="logout()" hidden>Se déconnecter</button>
+    </div>
+  </header>
 
-    <div id="status" class="status">Aucun traitement en cours.</div>
+  <main class="layout">
+    <aside class="menu">
+      <div class="menu-header">
+        <h2>Fonctionnalités</h2>
+        <p class="menu-desc">Toutes les briques prévues pour la rédaction. Seule la transcription de fichier audio est active.</p>
+      </div>
+      <div id="featureList" class="feature-list"></div>
+    </aside>
 
-    <h2>Résultat :</h2>
-    <div id="messages" class="messages"></div>
-  </div>
+    <section class="content">
+      <div class="card" id="authCard">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Sécuriser le portail</p>
+            <h1>Connexion à l'espace IA</h1>
+            <p class="muted">Identifiez-vous pour accéder aux modules de transcription et centraliser l'historique.</p>
+          </div>
+        </div>
+        <form id="loginForm" class="form-grid">
+          <label>
+            <span>Email professionnel</span>
+            <input type="email" id="email" placeholder="redaction@tunisienumerique.tn" required />
+          </label>
+          <label>
+            <span>Mot de passe</span>
+            <input type="password" id="password" placeholder="••••••••" required />
+          </label>
+          <button type="submit">Se connecter</button>
+          <p class="muted small">Pour la démo, utilisez l'email de la rédaction et le mot de passe "demo123".</p>
+        </form>
+      </div>
+
+      <div class="card" id="transcribeCard">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Speech-to-Text</p>
+            <h2>Transcrire un fichier audio</h2>
+            <p class="muted">Découpage automatique, transcription progressive et suivi temps réel.</p>
+          </div>
+          <span class="badge success">Opérationnel</span>
+        </div>
+
+        <div class="uploader">
+          <label class="file-label" for="audioFile">Choisissez un fichier audio</label>
+          <input type="file" id="audioFile" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/flac" />
+          <p class="formats">Formats autorisés : WAV, MP3, M4A, AAC, OGG, FLAC.</p>
+          <button type="button" onclick="uploadAudio()">Lancer la transcription</button>
+        </div>
+
+        <div id="status" class="status">Aucun traitement en cours.</div>
+
+        <div class="results">
+          <div class="results-header">
+            <h3>Résultat</h3>
+            <button class="ghost" type="button" onclick="clearTranscription()">Effacer</button>
+          </div>
+          <div id="messages" class="messages"></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script src="script.js"></script>
 </body>

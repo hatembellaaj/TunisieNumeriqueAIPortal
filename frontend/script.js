@@ -4,6 +4,49 @@ const API_URL = `${window.location.protocol}//${window.location.hostname}:5610/t
 
 const messagesDiv = document.getElementById("messages");
 const statusText = document.getElementById("status");
+const authStatus = document.getElementById("authStatus");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginForm = document.getElementById("loginForm");
+const transcribeCard = document.getElementById("transcribeCard");
+const featureList = document.getElementById("featureList");
+
+const FEATURES = [
+  { name: "Transcrire un fichier audio", status: "ready", key: "audio-file" },
+  { name: "Transcrire une vidéo", status: "soon", key: "video" },
+  { name: "Enregistrement en direct (micro)", status: "soon", key: "live" },
+  { name: "Transcription WhatsApp / mobile", status: "soon", key: "mobile" },
+  { name: "Transcription multi-locuteurs", status: "soon", key: "multi" },
+  { name: "Identifier les intervenants", status: "soon", key: "speakers" },
+  { name: "Nettoyer la transcription", status: "soon", key: "cleanup" },
+  { name: "Corriger orthographe & ponctuation", status: "soon", key: "grammar" },
+  { name: "Résumé express (5 lignes)", status: "soon", key: "summary" },
+  { name: "Résumé détaillé (plan d’article)", status: "soon", key: "detailed" },
+  { name: "Extraction de citations clés", status: "soon", key: "quotes" },
+  { name: "Générer un brouillon d’article", status: "soon", key: "draft" },
+  { name: "Générer des sous-titres (.srt / .vtt)", status: "soon", key: "subtitles" },
+  { name: "Découper par chapitres / thèmes", status: "soon", key: "chapters" },
+  { name: "Rechercher un mot / passage", status: "soon", key: "search" },
+  { name: "Traduire la transcription (FR ↔ AR)", status: "soon", key: "translate" },
+  { name: "Comparer deux versions", status: "soon", key: "compare" },
+  { name: "Exporter la transcription", status: "soon", key: "export" },
+  { name: "Historique de mes transcriptions", status: "soon", key: "history" },
+  { name: "Paramètres Speech-to-Text", status: "soon", key: "settings" },
+];
+
+function renderFeatures() {
+  featureList.innerHTML = "";
+  FEATURES.forEach((feature) => {
+    const item = document.createElement("div");
+    item.className = `feature-item ${feature.status === "ready" ? "active" : ""}`;
+    item.innerHTML = `
+      <span>${feature.name}</span>
+      <span class="badge ${feature.status === "ready" ? "success" : "soon"}">
+        ${feature.status === "ready" ? "Opérationnel" : "Bientôt"}
+      </span>
+    `;
+    featureList.appendChild(item);
+  });
+}
 
 function addMessage(text, index) {
   const message = document.createElement("div");
@@ -14,7 +57,54 @@ function addMessage(text, index) {
   messagesDiv.appendChild(message);
 }
 
+function clearTranscription() {
+  messagesDiv.innerHTML = "";
+  statusText.textContent = "Aucun traitement en cours.";
+}
+
+function setAuthenticated(isAuthenticated, email = "") {
+  const loggedText = email ? `Connecté en tant que ${email}` : "Connexion requise";
+  authStatus.textContent = loggedText;
+  logoutBtn.hidden = !isAuthenticated;
+  transcribeCard.classList.toggle("disabled", !isAuthenticated);
+}
+
+function initAuth() {
+  const token = localStorage.getItem("tn_portal_token");
+  const email = localStorage.getItem("tn_portal_email");
+  const isAuthenticated = Boolean(token && email);
+  setAuthenticated(isAuthenticated, email || "");
+}
+
+function logout() {
+  localStorage.removeItem("tn_portal_token");
+  localStorage.removeItem("tn_portal_email");
+  setAuthenticated(false);
+  alert("Vous êtes déconnecté.");
+}
+
+loginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (email.toLowerCase() === "redaction@tunisienumerique.tn" && password === "demo123") {
+    localStorage.setItem("tn_portal_token", "demo-token");
+    localStorage.setItem("tn_portal_email", email);
+    setAuthenticated(true, email);
+    alert("Connexion réussie, vous pouvez lancer la transcription.");
+  } else {
+    alert("Identifiants invalides. Merci d'utiliser le compte de démonstration.");
+  }
+});
+
 async function uploadAudio() {
+  const token = localStorage.getItem("tn_portal_token");
+  if (!token) {
+    alert("Connectez-vous pour lancer la transcription.");
+    return;
+  }
+
   const file = document.getElementById("audioFile").files[0];
   if (!file) {
     alert("Choisissez un fichier audio !");
@@ -81,3 +171,6 @@ async function uploadAudio() {
     alert(error.message);
   }
 }
+
+renderFeatures();
+initAuth();

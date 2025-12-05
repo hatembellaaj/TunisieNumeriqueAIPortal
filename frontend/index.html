@@ -40,15 +40,15 @@
         </div>
         <form id="loginForm" class="form-grid">
           <label>
-            <span>Email professionnel</span>
-            <input type="email" id="email" placeholder="redaction@tunisienumerique.tn" required />
+            <span>Login</span>
+            <input type="text" id="login" placeholder="admin@tunisienumerique.tn" required />
           </label>
           <label>
             <span>Mot de passe</span>
             <input type="password" id="password" placeholder="••••••••" required />
           </label>
           <button type="submit">Se connecter</button>
-          <p class="muted small">Pour la démo, utilisez l'email de la rédaction et le mot de passe "demo123".</p>
+          <p class="muted small">Administrateur par défaut : admin@tunisienumerique.tn / TN2026$$</p>
         </form>
       </div>
 
@@ -78,6 +78,87 @@
           </div>
           <div id="messages" class="messages"></div>
         </div>
+      </div>
+
+      <div class="card admin-only" id="adminCard" hidden>
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Suivi des opérations</p>
+            <h2>Dashboard des transcriptions</h2>
+            <p class="muted">Filtrez par utilisateur et par date toutes les opérations stockées en base.</p>
+          </div>
+          <span class="badge locked">Administrateur</span>
+        </div>
+
+        <div class="filters">
+          <label>
+            <span>Utilisateur</span>
+            <select id="filterUser">
+              <option value="">Tous</option>
+            </select>
+          </label>
+          <label>
+            <span>Date début</span>
+            <input type="date" id="filterStart" />
+          </label>
+          <label>
+            <span>Date fin</span>
+            <input type="date" id="filterEnd" />
+          </label>
+          <div class="filter-actions">
+            <button type="button" class="ghost" onclick="resetFilters()">Réinitialiser</button>
+            <button type="button" onclick="loadTranscriptions()">Actualiser</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Fichier stocké</th>
+                <th>Durée</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="transcriptionTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card admin-only" id="userCard" hidden>
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Gestion des utilisateurs</p>
+            <h2>Ajouter un nouveau compte</h2>
+            <p class="muted">L'administrateur est le seul autorisé à créer des accès.</p>
+          </div>
+          <span class="badge locked">Administrateur</span>
+        </div>
+
+        <form id="userForm" class="form-grid">
+          <label>
+            <span>Login</span>
+            <input type="text" id="newLogin" placeholder="prenom.nom" required />
+          </label>
+          <label>
+            <span>Prénom</span>
+            <input type="text" id="newFirstName" placeholder="Prénom" />
+          </label>
+          <label>
+            <span>Nom</span>
+            <input type="text" id="newLastName" placeholder="Nom" />
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" id="newEmail" placeholder="prenom.nom@tunisienumerique.tn" />
+          </label>
+          <label>
+            <span>Mot de passe</span>
+            <input type="password" id="newPassword" placeholder="Mot de passe" required />
+          </label>
+          <button type="submit">Créer l'utilisateur</button>
+        </form>
       </div>
     </section>
   </main>

@@ -1,6 +1,6 @@
 // Utilise automatiquement l'hôte actuel pour éviter les erreurs de requête
 // lorsqu'on accède à l'application depuis un autre appareil que le serveur.
-const API_URL = `${window.location.protocol}//${window.location.hostname}:5610/transcribe`;
+const API_URL = `${window.location.protocol}//${window.location.hostname}:15610/transcribe`;
 
 const messagesDiv = document.getElementById("messages");
 const statusText = document.getElementById("status");

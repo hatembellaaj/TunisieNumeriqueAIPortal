@@ -5,7 +5,7 @@ services:
     build: ./backend
     container_name: whisper_backend
     ports:
-      - "5610:5610"
+      - "15610:5610"
     volumes:
       - ./backend/temp_audio_input:/app/temp_audio_input
     restart: always
@@ -14,6 +14,6 @@ services:
     build: ./frontend
     container_name: whisper_frontend
     ports:
-      - "8787:80"
+      - "18887:80"
     depends_on:
       - backend

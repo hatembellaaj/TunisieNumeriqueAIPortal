@@ -15,6 +15,7 @@ const transcribeCard = document.getElementById("transcribeCard");
 const featureList = document.getElementById("featureList");
 const adminCard = document.getElementById("adminCard");
 const userCard = document.getElementById("userCard");
+const languageSelect = document.getElementById("language");
 const filterUser = document.getElementById("filterUser");
 const filterStart = document.getElementById("filterStart");
 const filterEnd = document.getElementById("filterEnd");
@@ -171,6 +172,7 @@ async function uploadAudio() {
 
   const formData = new FormData();
   formData.append("audio", file);
+  formData.append("language", languageSelect.value || "auto");
 
   messagesDiv.innerHTML = "";
   statusText.textContent = "Découpage et transcription en cours...";

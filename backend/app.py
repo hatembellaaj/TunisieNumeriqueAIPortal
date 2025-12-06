@@ -186,8 +186,14 @@ def _record_transcription(user_login: str, file_path: str, duration: Optional[fl
         )
 
 
-def _transcribe_generator(file_path: str, user_login: str, duration: Optional[float]) -> Iterable[str]:
-    """Génère les transcriptions de chaque segment en temps réel et enregistre en base."""
+def _transcribe_generator(
+    file_path: str, user_login: str, duration: Optional[float], language: Optional[str] = None
+) -> Iterable[str]:
+    """Génère les transcriptions de chaque segment en temps réel et enregistre en base.
+
+    Si ``language`` est fourni, il est transmis à Whisper. Sinon, la détection automatique
+    est utilisée (utile pour gérer l'arabe, le français ou l'anglais sans changer de paramètre).
+    """
     chunk_dir = None
     collected_text: list[str] = []
     success = False
@@ -197,8 +203,12 @@ def _transcribe_generator(file_path: str, user_login: str, duration: Optional[fl
             yield json.dumps({"type": "error", "message": "Aucun segment audio détecté."}) + "\n"
             return
 
+        transcribe_kwargs = {}
+        if language:
+            transcribe_kwargs["language"] = language
+
         for idx, chunk_file in enumerate(chunk_files, start=1):
-            result = model.transcribe(chunk_file, language="fr")
+            result = model.transcribe(chunk_file, **transcribe_kwargs)
             text = result.get("text", "")
             collected_text.append(text.strip())
             yield json.dumps({"type": "chunk", "index": idx, "text": text}) + "\n"
@@ -284,9 +294,17 @@ def transcribe():
         except Exception:
             pass  # ignore si ffprobe indisponible
 
+        language_raw = request.form.get("language", "").strip().lower()
+        language = language_raw if language_raw not in {"", "auto"} else None
+
         return Response(
             stream_with_context(
-                _transcribe_generator(file_path, g.current_user["login"], duration)
+                _transcribe_generator(
+                    file_path,
+                    g.current_user["login"],
+                    duration,
+                    language=language,
+                )
             ),
             mimetype="application/json",
         )

@@ -16,7 +16,7 @@
     </div>
     <div class="user-panel" id="userPanel">
       <div id="authStatus">Connexion requise</div>
-      <button id="logoutBtn" class="ghost" onclick="logout()" hidden>Se déconnecter</button>
+      <button id="logoutBtn" class="ghost" hidden>Se déconnecter</button>
     </div>
   </header>
 
@@ -72,21 +72,21 @@
               <option value="en">Anglais</option>
               <option value="ar">Arabe</option>
             </select>
-          </label>
-          <p class="formats">Formats autorisés : WAV, MP3, M4A, AAC, OGG, FLAC.</p>
-          <button type="button" onclick="uploadAudio()">Lancer la transcription</button>
-        </div>
+            </label>
+            <p class="formats">Formats autorisés : WAV, MP3, M4A, AAC, OGG, FLAC.</p>
+            <button id="uploadBtn" type="button">Lancer la transcription</button>
+          </div>
 
         <div id="status" class="status">Aucun traitement en cours.</div>
 
         <div class="results">
-          <div class="results-header">
-            <h3>Résultat</h3>
-            <div class="results-actions">
-              <button class="ghost" type="button" onclick="exportLatest()">Exporter</button>
-              <button class="ghost" type="button" onclick="clearTranscription()">Effacer</button>
+            <div class="results-header">
+              <h3>Résultat</h3>
+              <div class="results-actions">
+                <button id="exportBtn" class="ghost" type="button">Exporter</button>
+                <button id="clearBtn" class="ghost" type="button">Effacer</button>
+              </div>
             </div>
-          </div>
           <div id="messages" class="messages"></div>
         </div>
       </div>
@@ -115,12 +115,12 @@
           <label>
             <span>Date fin</span>
             <input type="date" id="filterEnd" />
-          </label>
-          <div class="filter-actions">
-            <button type="button" class="ghost" onclick="resetFilters()">Réinitialiser</button>
-            <button type="button" onclick="loadTranscriptions()">Actualiser</button>
+            </label>
+            <div class="filter-actions">
+              <button id="resetFiltersBtn" type="button" class="ghost">Réinitialiser</button>
+              <button id="refreshTranscriptionsBtn" type="button">Actualiser</button>
+            </div>
           </div>
-        </div>
 
         <div class="table-container">
           <table>
@@ -183,7 +183,7 @@
           <h3 id="modalTitle">Transcription</h3>
           <p class="muted small" id="modalMeta"></p>
         </div>
-        <button type="button" class="ghost" onclick="closeTranscriptionModal()">Fermer</button>
+        <button id="closeModalBtn" type="button" class="ghost">Fermer</button>
       </div>
       <div class="modal-body" id="modalBody"></div>
     </div>

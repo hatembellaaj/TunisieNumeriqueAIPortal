@@ -130,6 +130,7 @@
                 <th>Fichier stocké</th>
                 <th>Durée</th>
                 <th>Date</th>
+                <th>Texte</th>
               </tr>
             </thead>
             <tbody id="transcriptionTable"></tbody>
@@ -173,6 +174,20 @@
       </div>
     </section>
   </main>
+
+  <div id="transcriptionModal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Texte complet</p>
+          <h3 id="modalTitle">Transcription</h3>
+          <p class="muted small" id="modalMeta"></p>
+        </div>
+        <button type="button" class="ghost" onclick="closeTranscriptionModal()">Fermer</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

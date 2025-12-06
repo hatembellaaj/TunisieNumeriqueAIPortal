@@ -82,7 +82,10 @@
         <div class="results">
           <div class="results-header">
             <h3>Résultat</h3>
-            <button class="ghost" type="button" onclick="clearTranscription()">Effacer</button>
+            <div class="results-actions">
+              <button class="ghost" type="button" onclick="exportLatest()">Exporter</button>
+              <button class="ghost" type="button" onclick="clearTranscription()">Effacer</button>
+            </div>
           </div>
           <div id="messages" class="messages"></div>
         </div>

@@ -64,6 +64,15 @@
         <div class="uploader">
           <label class="file-label" for="audioFile">Choisissez un fichier audio</label>
           <input type="file" id="audioFile" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/flac" />
+          <label class="select-label" for="language">
+            <span>Langue de transcription</span>
+            <select id="language">
+              <option value="auto">Détection automatique (AR/FR/EN)</option>
+              <option value="fr">Français</option>
+              <option value="en">Anglais</option>
+              <option value="ar">Arabe</option>
+            </select>
+          </label>
           <p class="formats">Formats autorisés : WAV, MP3, M4A, AAC, OGG, FLAC.</p>
           <button type="button" onclick="uploadAudio()">Lancer la transcription</button>
         </div>

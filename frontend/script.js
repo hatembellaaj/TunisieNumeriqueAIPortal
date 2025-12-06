@@ -27,6 +27,12 @@ const transcriptionModal = document.getElementById("transcriptionModal");
 const modalBody = document.getElementById("modalBody");
 const modalTitle = document.getElementById("modalTitle");
 const modalMeta = document.getElementById("modalMeta");
+const uploadBtn = document.getElementById("uploadBtn");
+const exportBtn = document.getElementById("exportBtn");
+const clearBtn = document.getElementById("clearBtn");
+const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+const refreshTranscriptionsBtn = document.getElementById("refreshTranscriptionsBtn");
+const closeModalBtn = document.getElementById("closeModalBtn");
 
 const state = {
   token: null,
@@ -164,20 +170,25 @@ loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-async function uploadAudio() {
-  if (!state.token) {
-    alert("Connectez-vous pour lancer la transcription.");
-    return;
-  }
+  async function uploadAudio() {
+    if (!state.token) {
+      alert("Connectez-vous pour lancer la transcription.");
+      return;
+    }
 
-  const file = document.getElementById("audioFile").files[0];
-  if (!file) {
-    alert("Choisissez un fichier audio !");
-    return;
-  }
+    const file = document.getElementById("audioFile").files[0];
+    if (!file) {
+      alert("Choisissez un fichier audio !");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("audio", file);
+    if (file.size === 0) {
+      alert("Le fichier audio sélectionné est vide.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("audio", file);
   formData.append("language", languageSelect.value || "auto");
 
   messagesDiv.innerHTML = "";
@@ -211,27 +222,35 @@ async function uploadAudio() {
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 
-      for (const line of lines) {
-        if (!line.trim()) continue;
+        for (const line of lines) {
+          if (!line.trim()) continue;
 
-        const payload = JSON.parse(line);
-        if (payload.type === "chunk") {
-          addMessage(payload.text?.trim(), payload.index);
-          statusText.textContent = `Parcelle ${payload.index} transcrite`;
-        } else if (payload.type === "error") {
-          throw new Error(payload.message);
-        } else if (payload.type === "complete") {
-          statusText.textContent = "Transcription terminée ✅";
+          try {
+            const payload = JSON.parse(line);
+            if (payload.type === "chunk") {
+              addMessage(payload.text?.trim(), payload.index);
+              statusText.textContent = `Parcelle ${payload.index} transcrite`;
+            } else if (payload.type === "error") {
+              throw new Error(payload.message);
+            } else if (payload.type === "complete") {
+              statusText.textContent = "Transcription terminée ✅";
+            }
+          } catch (parseError) {
+            console.warn("Réponse inattendue du serveur :", line, parseError);
+          }
         }
       }
-    }
 
-    if (buffer.trim()) {
-      const payload = JSON.parse(buffer);
-      if (payload.type === "chunk") {
-        addMessage(payload.text?.trim(), payload.index);
+      if (buffer.trim()) {
+        try {
+          const payload = JSON.parse(buffer);
+          if (payload.type === "chunk") {
+            addMessage(payload.text?.trim(), payload.index);
+          }
+        } catch (parseError) {
+          console.warn("Réponse finale inattendue du serveur :", buffer, parseError);
+        }
       }
-    }
 
     if (state.user?.is_admin) {
       await loadTranscriptions();
@@ -341,9 +360,9 @@ async function loadTranscriptions() {
     transcriptionTable.innerHTML = "";
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      const textAction = row.has_text
-        ? `<button type="button" class="ghost" onclick="viewTranscription(${row.id})">Afficher</button>`
-        : '<span class="muted small">Aucun texte</span>';
+        const textAction = row.has_text
+          ? `<button type="button" class="ghost" data-action="view-transcription" data-id="${row.id}">Afficher</button>`
+          : '<span class="muted small">Aucun texte</span>';
 
       tr.innerHTML = `
         <td>${row.user_login}</td>
@@ -419,12 +438,19 @@ userForm.addEventListener("submit", async (event) => {
 renderFeatures();
 restoreSession();
 
-// Rendez les fonctions accessibles aux gestionnaires inline existants
-window.logout = logout;
-window.uploadAudio = uploadAudio;
-window.exportLatest = exportLatest;
-window.clearTranscription = clearTranscription;
-window.resetFilters = resetFilters;
-window.loadTranscriptions = loadTranscriptions;
-window.viewTranscription = viewTranscription;
-window.closeTranscriptionModal = closeTranscriptionModal;
+logoutBtn?.addEventListener("click", logout);
+uploadBtn?.addEventListener("click", uploadAudio);
+exportBtn?.addEventListener("click", exportLatest);
+clearBtn?.addEventListener("click", clearTranscription);
+resetFiltersBtn?.addEventListener("click", resetFilters);
+refreshTranscriptionsBtn?.addEventListener("click", loadTranscriptions);
+closeModalBtn?.addEventListener("click", closeTranscriptionModal);
+
+transcriptionTable?.addEventListener("click", (event) => {
+  const target = event.target.closest("[data-action='view-transcription']");
+  if (!target) return;
+  const id = Number(target.getAttribute("data-id"));
+  if (Number.isFinite(id)) {
+    viewTranscription(id);
+  }
+});

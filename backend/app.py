@@ -314,6 +314,36 @@ def transcribe():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/export/latest", methods=["GET"])
+@_require_auth()
+def export_latest_transcription():
+    user_login = g.current_user["login"]
+    with _get_db() as conn:
+        row = conn.execute(
+            """
+            SELECT file_name, transcribed_at, full_text
+            FROM transcriptions
+            WHERE user_login = ?
+            ORDER BY transcribed_at DESC
+            LIMIT 1
+            """,
+            (user_login,),
+        ).fetchone()
+
+    latest_text = (row["full_text"] or "").strip() if row else ""
+    if not latest_text:
+        return jsonify({"error": "Aucune transcription disponible pour export"}), 404
+
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    safe_name = secure_filename(row["file_name"]) or "transcription"
+    base_name = os.path.splitext(safe_name)[0] or "transcription"
+    filename = f"{base_name}_{timestamp}.txt"
+
+    response = Response(latest_text, mimetype="text/plain; charset=utf-8")
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return response
+
+
 @app.route("/admin/transcriptions", methods=["GET"])
 @_require_auth(admin_only=True)
 def list_transcriptions():

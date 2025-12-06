@@ -337,6 +337,11 @@ td small {
   margin-bottom: 8px;
 }
 
+.results-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .messages {
   display: flex;
   flex-direction: column;

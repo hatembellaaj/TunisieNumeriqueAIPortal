@@ -5,6 +5,7 @@ const API_TRANSCRIBE = `${API_BASE}/transcribe`;
 const API_LOGIN = `${API_BASE}/login`;
 const API_USERS = `${API_BASE}/admin/users`;
 const API_TRANSCRIPTIONS = `${API_BASE}/admin/transcriptions`;
+const API_EXPORT = `${API_BASE}/export/latest`;
 
 const messagesDiv = document.getElementById("messages");
 const statusText = document.getElementById("status");
@@ -45,7 +46,7 @@ const FEATURES = [
   { name: "Rechercher un mot / passage", status: "soon", key: "search" },
   { name: "Traduire la transcription (FR ↔ AR)", status: "soon", key: "translate" },
   { name: "Comparer deux versions", status: "soon", key: "compare" },
-  { name: "Exporter la transcription", status: "soon", key: "export" },
+  { name: "Exporter la transcription", status: "ready", key: "export" },
   { name: "Historique de mes transcriptions", status: "soon", key: "history" },
   { name: "Paramètres Speech-to-Text", status: "soon", key: "settings" },
 ];
@@ -234,6 +235,41 @@ async function uploadAudio() {
     console.error("Erreur :", error);
     statusText.textContent = "Erreur de connexion avec le serveur Flask";
     addMessage("La transcription a échoué. Veuillez réessayer.");
+    alert(error.message);
+  }
+}
+
+async function exportLatest() {
+  if (!state.token) {
+    alert("Connectez-vous pour exporter la transcription.");
+    return;
+  }
+
+  try {
+    const response = await fetch(API_EXPORT, {
+      headers: buildAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || "Impossible de générer l'export");
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    const filename = match?.[1] || "transcription.txt";
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    statusText.textContent = "Fichier exporté ✅";
+  } catch (error) {
     alert(error.message);
   }
 }

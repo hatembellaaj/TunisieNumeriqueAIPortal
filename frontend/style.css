@@ -341,6 +341,10 @@ td small {
   z-index: 50;
 }
 
+.modal[hidden] {
+  display: none !important;
+}
+
 .modal-content {
   background: #fff;
   border-radius: 16px;

@@ -351,7 +351,11 @@ def list_transcriptions():
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
 
-    query = "SELECT user_login, file_name, file_path, duration_seconds, transcribed_at FROM transcriptions WHERE 1=1"
+    query = (
+        "SELECT id, user_login, file_name, file_path, duration_seconds, transcribed_at, "
+        "CASE WHEN full_text IS NOT NULL AND length(trim(full_text)) > 0 THEN 1 ELSE 0 END as has_text "
+        "FROM transcriptions WHERE 1=1"
+    )
     params: list[str] = []
     if user_filter:
         query += " AND user_login = ?"
@@ -371,14 +375,47 @@ def list_transcriptions():
     return jsonify(
         [
             {
+                "id": row["id"],
                 "user_login": row["user_login"],
                 "file_name": row["file_name"],
                 "file_path": row["file_path"],
                 "duration_seconds": row["duration_seconds"],
                 "transcribed_at": row["transcribed_at"],
+                "has_text": bool(row["has_text"]),
             }
             for row in rows
         ]
+    )
+
+
+@app.route("/admin/transcriptions/<int:transcription_id>", methods=["GET"])
+@_require_auth(admin_only=True)
+def get_transcription_detail(transcription_id: int):
+    with _get_db() as conn:
+        row = conn.execute(
+            """
+            SELECT id, user_login, file_name, transcribed_at, full_text
+            FROM transcriptions
+            WHERE id = ?
+            """,
+            (transcription_id,),
+        ).fetchone()
+
+    if not row:
+        return jsonify({"error": "Transcription introuvable"}), 404
+
+    full_text = (row["full_text"] or "").strip()
+    if not full_text:
+        return jsonify({"error": "Aucun texte enregistré pour cette transcription"}), 404
+
+    return jsonify(
+        {
+            "id": row["id"],
+            "user_login": row["user_login"],
+            "file_name": row["file_name"],
+            "transcribed_at": row["transcribed_at"],
+            "full_text": full_text,
+        }
     )
 
 

@@ -6,6 +6,7 @@ const API_LOGIN = `${API_BASE}/login`;
 const API_USERS = `${API_BASE}/admin/users`;
 const API_TRANSCRIPTIONS = `${API_BASE}/admin/transcriptions`;
 const API_EXPORT = `${API_BASE}/export/latest`;
+const API_TRANSCRIPTION_DETAIL = `${API_BASE}/admin/transcriptions`;
 
 const messagesDiv = document.getElementById("messages");
 const statusText = document.getElementById("status");
@@ -22,6 +23,10 @@ const filterStart = document.getElementById("filterStart");
 const filterEnd = document.getElementById("filterEnd");
 const transcriptionTable = document.getElementById("transcriptionTable");
 const userForm = document.getElementById("userForm");
+const transcriptionModal = document.getElementById("transcriptionModal");
+const modalBody = document.getElementById("modalBody");
+const modalTitle = document.getElementById("modalTitle");
+const modalMeta = document.getElementById("modalMeta");
 
 const state = {
   token: null,
@@ -307,6 +312,17 @@ function formatDate(value) {
   return date.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function openTranscriptionModal(title, meta, text) {
+  modalTitle.textContent = title;
+  modalMeta.textContent = meta;
+  modalBody.textContent = text || "(aucun texte disponible)";
+  transcriptionModal.hidden = false;
+}
+
+function closeTranscriptionModal() {
+  transcriptionModal.hidden = true;
+}
+
 async function loadTranscriptions() {
   if (!state.user?.is_admin) return;
   const params = new URLSearchParams();
@@ -325,16 +341,42 @@ async function loadTranscriptions() {
     transcriptionTable.innerHTML = "";
     rows.forEach((row) => {
       const tr = document.createElement("tr");
+      const textAction = row.has_text
+        ? `<button type="button" class="ghost" onclick="viewTranscription(${row.id})">Afficher</button>`
+        : '<span class="muted small">Aucun texte</span>';
+
       tr.innerHTML = `
         <td>${row.user_login}</td>
         <td>${row.file_name}<br/><small>${row.file_path || ""}</small></td>
         <td>${formatDuration(row.duration_seconds)}</td>
         <td>${formatDate(row.transcribed_at)}</td>
+        <td>${textAction}</td>
       `;
       transcriptionTable.appendChild(tr);
     });
   } catch (error) {
     console.error(error);
+  }
+}
+
+async function viewTranscription(transcriptionId) {
+  try {
+    const response = await fetch(`${API_TRANSCRIPTION_DETAIL}/${transcriptionId}`, {
+      headers: buildAuthHeaders(),
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Impossible de récupérer la transcription");
+    }
+
+    openTranscriptionModal(
+      payload.file_name || "Transcription",
+      `Utilisateur : ${payload.user_login} · ${formatDate(payload.transcribed_at)}`,
+      payload.full_text
+    );
+  } catch (error) {
+    alert(error.message);
   }
 }
 
@@ -376,3 +418,13 @@ userForm.addEventListener("submit", async (event) => {
 
 renderFeatures();
 restoreSession();
+
+// Rendez les fonctions accessibles aux gestionnaires inline existants
+window.logout = logout;
+window.uploadAudio = uploadAudio;
+window.exportLatest = exportLatest;
+window.clearTranscription = clearTranscription;
+window.resetFilters = resetFilters;
+window.loadTranscriptions = loadTranscriptions;
+window.viewTranscription = viewTranscription;
+window.closeTranscriptionModal = closeTranscriptionModal;
